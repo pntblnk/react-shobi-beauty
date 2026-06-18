@@ -39,6 +39,16 @@ const PETALS = Array.from({ length: 12 }, (_, i) => ({
 
 const C = { plum:"#5c2d3e", rouge:"#c94a5e", gold:"#b8874a", cream:"#fdf8f4", pale:"#f7f0eb", mist:"#e8ddd4", ink:"#1a1410" };
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const fn = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return isMobile;
+}
+
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 function FadeUp({ children, delay = 0 }) {
@@ -160,49 +170,125 @@ function ProductModal({ product, onClose }) {
   );
 }
 
+function Nav({ page, setPage, cartCount, setCartOpen }) {
+  const [navScrolled, setNavScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
+  const NAV_PAGES = ["collections","rituals","ingredients","philosophy"];
+
+  useEffect(() => {
+    const fn = () => setNavScrolled(window.scrollY > 60);
+    window.addEventListener("scroll", fn);
+    return () => window.removeEventListener("scroll", fn);
+  }, []);
+
+  return (
+    <>
+      <motion.nav
+        animate={{ background: navScrolled || menuOpen ? "rgba(253,248,244,0.97)" : "transparent", boxShadow: navScrolled ? "0 1px 24px rgba(0,0,0,0.06)" : "none" }}
+        transition={{ duration:0.4 }}
+        style={{ position:"fixed", top:0, left:0, right:0, zIndex:200, display:"flex", justifyContent:"space-between", alignItems:"center", padding: isMobile ? "1rem 1.5rem" : "1.4rem 3rem", backdropFilter: navScrolled ? "blur(12px)" : "none" }}>
+        <motion.div initial={{ opacity:0, x:-20 }} animate={{ opacity:1, x:0 }} transition={{ duration:0.8, delay:0.2 }}
+          onClick={() => { setPage("collections"); setMenuOpen(false); }}
+          style={{ fontFamily:"'Shippori Mincho', serif", fontSize: isMobile ? "1.2rem" : "1.4rem", letterSpacing:"0.15em", color:C.plum, cursor:"pointer", userSelect:"none" }}>
+          粧美<span style={{ display:"block", fontSize:"0.58rem", letterSpacing:"0.4em", color:C.gold, fontFamily:"'Cormorant Garamond', serif", fontWeight:300, textTransform:"uppercase", marginTop:1 }}>Shōbi Beauty</span>
+        </motion.div>
+
+        {isMobile ? (
+          <div style={{ display:"flex", alignItems:"center", gap:"1rem" }}>
+            <button onClick={() => setCartOpen(true)} style={{ position:"relative", background:"none", border:"none", cursor:"pointer", fontSize:"1.3rem", color:C.plum, lineHeight:1 }}>
+              🛍{cartCount > 0 && <span style={{ position:"absolute", top:-6, right:-8, background:C.rouge, color:"white", borderRadius:"50%", width:18, height:18, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.6rem", fontFamily:"sans-serif", fontWeight:700 }}>{cartCount}</span>}
+            </button>
+            <button onClick={() => setMenuOpen(m => !m)} style={{ background:"none", border:"none", cursor:"pointer", color:C.plum, fontSize:"1.5rem", lineHeight:1, padding:0 }}>
+              {menuOpen ? "✕" : "☰"}
+            </button>
+          </div>
+        ) : (
+          <>
+            <motion.ul initial={{ opacity:0, y:-12 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.8, delay:0.3 }}
+              style={{ display:"flex", gap:"2.5rem", listStyle:"none", margin:0, padding:0 }}>
+              {NAV_PAGES.map(p => (
+                <li key={p}>
+                  <motion.a onClick={() => setPage(p)} whileHover={{ opacity:1, y:-1 }}
+                    style={{ textDecoration:"none", fontSize:"0.78rem", letterSpacing:"0.2em", textTransform:"uppercase", color:C.ink, opacity:page===p ? 1 : 0.5, cursor:"pointer", display:"block", borderBottom:page===p ? `1px solid ${C.rouge}` : "none", paddingBottom:2, transition:"opacity 0.2s" }}>
+                    {p}
+                  </motion.a>
+                </li>
+              ))}
+            </motion.ul>
+            <motion.div initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} transition={{ duration:0.8, delay:0.4 }}
+              style={{ position:"relative", cursor:"pointer", color:C.plum, fontSize:"1.3rem" }} onClick={() => setCartOpen(true)}>
+              🛍{cartCount > 0 && <span style={{ position:"absolute", top:-6, right:-8, background:C.rouge, color:"white", borderRadius:"50%", width:18, height:18, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.6rem", fontFamily:"sans-serif", fontWeight:700 }}>{cartCount}</span>}
+            </motion.div>
+          </>
+        )}
+      </motion.nav>
+
+      {/* Mobile menu dropdown */}
+      <AnimatePresence>
+        {isMobile && menuOpen && (
+          <motion.div initial={{ opacity:0, y:-10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-10 }}
+            style={{ position:"fixed", top:"60px", left:0, right:0, zIndex:190, background:"rgba(253,248,244,0.98)", borderBottom:`0.5px solid ${C.mist}`, padding:"1.5rem", display:"flex", flexDirection:"column", gap:"1.2rem" }}>
+            {NAV_PAGES.map(p => (
+              <motion.a key={p} onClick={() => { setPage(p); setMenuOpen(false); }} whileTap={{ scale:0.97 }}
+                style={{ textDecoration:"none", fontSize:"1rem", letterSpacing:"0.2em", textTransform:"uppercase", color: page===p ? C.rouge : C.plum, cursor:"pointer", fontFamily:"'Cormorant Garamond', serif", borderBottom:`0.5px solid ${C.mist}`, paddingBottom:"1rem" }}>
+                {p}
+              </motion.a>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
 // ─── PAGES ───────────────────────────────────────────────────────────────────
 
 function RitualsPage() {
   const [activeStep, setActiveStep] = useState(0);
+  const isMobile = useIsMobile();
   const step = RITUAL_STEPS[activeStep];
   return (
     <motion.div initial={{ opacity:0, y:18 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, ease:[0.22,1,0.36,1] }}>
       {/* Hero */}
-      <div style={{ background:C.plum, padding:"6rem 3rem 5rem", position:"relative", overflow:"hidden" }}>
-        <div style={{ position:"absolute", right:"-2rem", top:"-4rem", fontFamily:"'Shippori Mincho', serif", fontSize:"22rem", color:"rgba(255,255,255,0.04)", lineHeight:1, pointerEvents:"none" }}>儀</div>
+      <div style={{ background:C.plum, padding: isMobile ? "4rem 1.5rem 3rem" : "6rem 3rem 5rem", position:"relative", overflow:"hidden" }}>
+        <div style={{ position:"absolute", right:"-2rem", top:"-4rem", fontFamily:"'Shippori Mincho', serif", fontSize: isMobile ? "10rem" : "22rem", color:"rgba(255,255,255,0.04)", lineHeight:1, pointerEvents:"none" }}>儀</div>
         <motion.span initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} style={{ fontSize:"0.7rem", letterSpacing:"0.45em", textTransform:"uppercase", color:"#e8a0ae", display:"block", marginBottom:"1rem" }}>— Morning Practice</motion.span>
         <motion.h1 initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.1 }}
-          style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"3.5rem", color:C.cream, lineHeight:1.1, marginBottom:"1.5rem" }}>
-          The Six-Step<br /><em style={{ fontFamily:"'Cormorant Garamond', serif", fontStyle:"italic", color:"#e8a0ae", fontSize:"2.8rem" }}>Shōbi Ritual</em>
+          style={{ fontFamily:"'Shippori Mincho', serif", fontSize: isMobile ? "2.5rem" : "3.5rem", color:C.cream, lineHeight:1.1, marginBottom:"1.5rem" }}>
+          The Six-Step<br /><em style={{ fontFamily:"'Cormorant Garamond', serif", fontStyle:"italic", color:"#e8a0ae", fontSize: isMobile ? "2rem" : "2.8rem" }}>Shōbi Ritual</em>
         </motion.h1>
         <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.2 }}
-          style={{ color:C.mist, fontSize:"1.05rem", lineHeight:1.8, fontWeight:300, maxWidth:520, opacity:0.8 }}>
+          style={{ color:C.mist, fontSize:"1rem", lineHeight:1.8, fontWeight:300, maxWidth:520, opacity:0.8 }}>
           Each step is a deliberate pause — not a routine to rush through, but a sequence of small attentions that become a kind of knowledge.
         </motion.p>
       </div>
 
       {/* Step explorer */}
-      <div style={{ display:"grid", gridTemplateColumns:"260px 1fr", minHeight:"70vh" }}>
-        <div style={{ background:C.pale, borderRight:`0.5px solid ${C.mist}`, padding:"2rem 0" }}>
+      <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "260px 1fr", minHeight: isMobile ? "auto" : "70vh" }}>
+        {/* Step sidebar / mobile tabs */}
+        <div style={{ background:C.pale, borderRight: isMobile ? "none" : `0.5px solid ${C.mist}`, borderBottom: isMobile ? `0.5px solid ${C.mist}` : "none", padding: isMobile ? "1rem 0" : "2rem 0", display:"flex", flexDirection: isMobile ? "row" : "column", overflowX: isMobile ? "auto" : "visible" }}>
           {RITUAL_STEPS.map((s,i) => (
-            <motion.div key={i} onClick={() => setActiveStep(i)} whileHover={{ x:4 }}
-              style={{ padding:"1.2rem 2rem", cursor:"pointer", borderLeft:activeStep===i ? `3px solid ${C.rouge}` : "3px solid transparent", background:activeStep===i ? "rgba(201,74,94,0.05)" : "transparent", transition:"background 0.2s" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:"1rem" }}>
+            <motion.div key={i} onClick={() => setActiveStep(i)} whileHover={{ x: isMobile ? 0 : 4 }}
+              style={{ padding: isMobile ? "0.8rem 1.2rem" : "1.2rem 2rem", cursor:"pointer", borderLeft: !isMobile && activeStep===i ? `3px solid ${C.rouge}` : !isMobile ? "3px solid transparent" : "none", borderBottom: isMobile && activeStep===i ? `2px solid ${C.rouge}` : isMobile ? "2px solid transparent" : "none", background:activeStep===i ? "rgba(201,74,94,0.05)" : "transparent", transition:"background 0.2s", flexShrink: isMobile ? 0 : 1 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"0.6rem" }}>
                 <span style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"1.4rem", color:activeStep===i ? C.rouge : C.plum, opacity:activeStep===i ? 1 : 0.4 }}>{s.num}</span>
-                <div>
+                {!isMobile && <div>
                   <div style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"0.95rem", color:C.plum }}>{s.title}</div>
                   <div style={{ fontSize:"0.72rem", color:C.gold, letterSpacing:"0.1em" }}>{s.time}</div>
-                </div>
+                </div>}
+                {isMobile && <div style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"0.8rem", color: activeStep===i ? C.rouge : C.plum }}>{s.title}</div>}
               </div>
             </motion.div>
           ))}
         </div>
+
         <AnimatePresence mode="wait">
           <motion.div key={activeStep}
-            initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-20 }}
+            initial={{ opacity:0, x: isMobile ? 0 : 20 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x: isMobile ? 0 : -20 }}
             transition={{ duration:0.35, ease:[0.22,1,0.36,1] }}
-            style={{ display:"grid", gridTemplateColumns:"1fr 1fr" }}>
-            <div style={{ padding:"3.5rem" }}>
+            style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+            <div style={{ padding: isMobile ? "2rem 1.5rem" : "3.5rem" }}>
               <div style={{ display:"flex", alignItems:"baseline", gap:"1rem", marginBottom:"0.5rem" }}>
                 <span style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"3rem", color:C.rouge }}>{step.num}</span>
                 <span style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"1.8rem", color:C.plum }}>{step.title}</span>
@@ -210,14 +296,14 @@ function RitualsPage() {
               <div style={{ fontSize:"0.7rem", letterSpacing:"0.3em", textTransform:"uppercase", color:C.gold, marginBottom:"0.5rem" }}>{step.product}</div>
               <div style={{ width:40, height:0.5, background:C.mist, margin:"1.2rem 0" }} />
               <p style={{ fontSize:"1.05rem", lineHeight:1.9, color:C.ink, opacity:0.7, fontWeight:300, marginBottom:"2rem" }}>{step.desc}</p>
-              <div style={{ display:"flex", gap:"0.8rem" }}>
+              <div style={{ display:"flex", gap:"0.8rem", flexWrap:"wrap" }}>
                 {activeStep > 0 && <button onClick={() => setActiveStep(s => s-1)} style={{ background:"transparent", color:C.plum, padding:"0.85rem 1.8rem", border:`0.5px solid ${C.plum}`, fontFamily:"'Cormorant Garamond', serif", fontSize:"0.85rem", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer" }}>← Previous</button>}
                 {activeStep < RITUAL_STEPS.length-1
                   ? <button onClick={() => setActiveStep(s => s+1)} style={{ background:C.plum, color:C.cream, padding:"0.85rem 2rem", border:"none", fontFamily:"'Cormorant Garamond', serif", fontSize:"0.85rem", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer" }}>Next step →</button>
                   : <button style={{ background:C.rouge, color:C.cream, padding:"0.85rem 2rem", border:"none", fontFamily:"'Cormorant Garamond', serif", fontSize:"0.85rem", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer" }}>Shop the ritual →</button>}
               </div>
             </div>
-            <div style={{ position:"relative", overflow:"hidden" }}>
+            <div style={{ position:"relative", overflow:"hidden", minHeight: isMobile ? 260 : "auto" }}>
               <img src={step.img} alt={step.title} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
               <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right, rgba(253,248,244,0.3) 0%, transparent 40%)" }} />
               <div style={{ position:"absolute", bottom:"2rem", right:"2rem", fontFamily:"'Shippori Mincho', serif", fontSize:"5rem", color:"rgba(255,255,255,0.15)", lineHeight:1 }}>{step.kanji}</div>
@@ -227,16 +313,16 @@ function RitualsPage() {
       </div>
 
       {/* Gallery */}
-      <div style={{ padding:"4rem 3rem", background:C.cream }}>
+      <div style={{ padding: isMobile ? "3rem 1.5rem" : "4rem 3rem", background:C.cream }}>
         <FadeUp>
           <div style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"2rem", color:C.plum, marginBottom:"2rem" }}>
             <span style={{ display:"block", fontSize:"0.7rem", letterSpacing:"0.3em", textTransform:"uppercase", color:C.gold, marginBottom:"0.4rem", fontFamily:"'Cormorant Garamond', serif" }}>The setting</span>
             Where ritual happens
           </div>
         </FadeUp>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem", height:400 }}>
-          <motion.img whileHover={{ scale:1.02 }} transition={{ duration:0.5 }} src="https://images.unsplash.com/photo-1708789715236-e5060618d118?w=900&q=80" alt="Onsen" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
-          <motion.img whileHover={{ scale:1.02 }} transition={{ duration:0.5 }} src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=900&q=80" alt="Spa" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+        <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"1rem", height: isMobile ? "auto" : 400 }}>
+          <motion.img whileHover={{ scale:1.02 }} transition={{ duration:0.5 }} src="https://images.unsplash.com/photo-1708789715236-e5060618d118?w=900&q=80" alt="Onsen" style={{ width:"100%", height: isMobile ? 220 : "100%", objectFit:"cover", display:"block" }} />
+          <motion.img whileHover={{ scale:1.02 }} transition={{ duration:0.5 }} src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=900&q=80" alt="Spa" style={{ width:"100%", height: isMobile ? 220 : "100%", objectFit:"cover", display:"block" }} />
         </div>
       </div>
     </motion.div>
@@ -541,50 +627,34 @@ export default function ShobiAnimated() {
   const [page, setPage] = useState("collections");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [activeCategory, setActiveCategory] = useState("all");
-  const [navScrolled, setNavScrolled] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [cart, setCart] = useState([]);
+  const isMobile = useIsMobile();
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start","end start"] });
   const heroY = useTransform(scrollYProgress, [0,1], ["0%","30%"]);
 
-  useEffect(() => {
-    const fn = () => setNavScrolled(window.scrollY > 60);
-    window.addEventListener("scroll", fn);
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
-
   useEffect(() => { window.scrollTo(0,0); }, [page]);
 
   const filtered = activeCategory === "all" ? PRODUCTS : PRODUCTS.filter(p => p.category === activeCategory);
-  const NAV_PAGES = ["collections","rituals","ingredients","philosophy"];
+  const cartCount = cart.reduce((s,i) => s + i.qty, 0);
+
+  const footer = (
+    <footer style={{ background:C.pale, padding: isMobile ? "1.5rem" : "2rem 3rem", display:"flex", flexDirection: isMobile ? "column" : "row", justifyContent:"space-between", alignItems: isMobile ? "flex-start" : "center", borderTop:`0.5px solid ${C.mist}`, gap: isMobile ? "1rem" : 0 }}>
+      <div style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"0.9rem", color:C.plum, opacity:0.5, letterSpacing:"0.15em" }}>粧美 Shōbi Beauty — Kyoto © 2026</div>
+      <div style={{ display:"flex", gap:"1.5rem", flexWrap:"wrap" }}>
+        {["Privacy","Sustainability","Press","Stockists"].map(l => (
+          <motion.a key={l} onClick={() => setPage(l.toLowerCase())} whileHover={{ opacity:0.8, y:-1 }} style={{ fontSize:"0.68rem", letterSpacing:"0.15em", textTransform:"uppercase", color:C.plum, opacity:0.4, textDecoration:"none", cursor:"pointer" }}>{l}</motion.a>
+        ))}
+      </div>
+    </footer>
+  );
 
   return (
     <div style={{ fontFamily:"'Cormorant Garamond', serif", background:C.cream, color:C.ink, overflowX:"hidden" }}>
       <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet" />
 
-      {/* ── NAV ── */}
-      <motion.nav
-        animate={{ background:navScrolled ? "rgba(253,248,244,0.96)" : "transparent", boxShadow:navScrolled ? "0 1px 24px rgba(0,0,0,0.06)" : "none" }}
-        transition={{ duration:0.4 }}
-        style={{ position:"fixed", top:0, left:0, right:0, zIndex:200, display:"flex", justifyContent:"space-between", alignItems:"center", padding:"1.4rem 3rem", backdropFilter:navScrolled ? "blur(12px)" : "none" }}>
-        <motion.div initial={{ opacity:0, x:-20 }} animate={{ opacity:1, x:0 }} transition={{ duration:0.8, delay:0.2 }}
-          onClick={() => setPage("collections")}
-          style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"1.4rem", letterSpacing:"0.15em", color:C.plum, cursor:"pointer", userSelect:"none" }}>
-          粧美<span style={{ display:"block", fontSize:"0.58rem", letterSpacing:"0.4em", color:C.gold, fontFamily:"'Cormorant Garamond', serif", fontWeight:300, textTransform:"uppercase", marginTop:1 }}>Shōbi Beauty</span>
-        </motion.div>
-        <motion.ul initial={{ opacity:0, y:-12 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.8, delay:0.3 }}
-          style={{ display:"flex", gap:"2.5rem", listStyle:"none", margin:0, padding:0 }}>
-          {NAV_PAGES.map(p => (
-            <li key={p}>
-              <motion.a onClick={() => setPage(p)} whileHover={{ opacity:1, y:-1 }}
-                style={{ textDecoration:"none", fontSize:"0.78rem", letterSpacing:"0.2em", textTransform:"uppercase", color:C.ink, opacity:page===p ? 1 : 0.5, cursor:"pointer", display:"block", borderBottom:page===p ? `1px solid ${C.rouge}` : "none", paddingBottom:2, transition:"opacity 0.2s" }}>
-                {p}
-              </motion.a>
-            </li>
-          ))}
-        </motion.ul>
-        <motion.div initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} transition={{ duration:0.8, delay:0.4 }}
-          style={{ fontSize:"1.3rem", cursor:"pointer", color:C.plum }}>🛍</motion.div>
-      </motion.nav>
+      <Nav page={page} setPage={setPage} cartCount={cartCount} setCartOpen={setCartOpen} />
 
       {/* ── PAGES ── */}
       <AnimatePresence mode="wait">
@@ -613,39 +683,49 @@ export default function ShobiAnimated() {
               <div style={{ position:"absolute", inset:0, overflow:"hidden", pointerEvents:"none" }}>
                 {PETALS.map(p => <Petal key={p.id} {...p} />)}
               </div>
-              <motion.div style={{ position:"absolute", right:"-5%", top:"50%", translateY:"-50%", y:heroY }}
-                initial={{ opacity:0, scale:0.8 }} animate={{ opacity:1, scale:1 }} transition={{ duration:1.4, ease:[0.22,1,0.36,1] }}>
-                <div style={{ width:600, height:600, borderRadius:"50%", background:"linear-gradient(135deg, #f5e0e6 0%, #f7f0eb 50%, #e8c4c9 100%)", opacity:0.5 }} />
-              </motion.div>
-              <motion.div style={{ position:"absolute", right:"5%", top:"50%", translateY:"-50%", y:heroY }}
-                initial={{ opacity:0, x:60 }} animate={{ opacity:1, x:0 }} transition={{ duration:1.2, delay:0.4, ease:[0.22,1,0.36,1] }}>
-                <div style={{ width:380, height:480, overflow:"hidden", borderRadius:"2px", boxShadow:"0 40px 80px rgba(92,45,62,0.12)" }}>
-                  <img src="https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=800&q=80" alt="Hero" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+              {!isMobile && (
+                <>
+                  <motion.div style={{ position:"absolute", right:"-5%", top:"50%", translateY:"-50%", y:heroY }}
+                    initial={{ opacity:0, scale:0.8 }} animate={{ opacity:1, scale:1 }} transition={{ duration:1.4, ease:[0.22,1,0.36,1] }}>
+                    <div style={{ width:600, height:600, borderRadius:"50%", background:"linear-gradient(135deg, #f5e0e6 0%, #f7f0eb 50%, #e8c4c9 100%)", opacity:0.5 }} />
+                  </motion.div>
+                  <motion.div style={{ position:"absolute", right:"5%", top:"50%", translateY:"-50%", y:heroY }}
+                    initial={{ opacity:0, x:60 }} animate={{ opacity:1, x:0 }} transition={{ duration:1.2, delay:0.4, ease:[0.22,1,0.36,1] }}>
+                    <div style={{ width:380, height:480, overflow:"hidden", borderRadius:"2px", boxShadow:"0 40px 80px rgba(92,45,62,0.12)" }}>
+                      <img src="https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=800&q=80" alt="Hero" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+                    </div>
+                    <motion.div animate={{ y:[0,-8,0] }} transition={{ duration:4, repeat:Infinity, ease:"easeInOut" }}
+                      style={{ position:"absolute", bottom:"-1.5rem", left:"-3rem", background:C.cream, padding:"1rem 1.4rem", boxShadow:"0 12px 32px rgba(92,45,62,0.1)" }}>
+                      <div style={{ fontSize:"0.6rem", letterSpacing:"0.25em", textTransform:"uppercase", color:C.gold }}>Bestseller</div>
+                      <div style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"1.1rem", color:C.rouge, margin:"0.2rem 0" }}>Sakura Blush</div>
+                      <div style={{ fontSize:"0.8rem", color:C.plum, opacity:0.6 }}>¥5,200</div>
+                    </motion.div>
+                  </motion.div>
+                </>
+              )}
+              {/* Mobile hero background */}
+              {isMobile && (
+                <div style={{ position:"absolute", inset:0, zIndex:0 }}>
+                  <img src="https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=800&q=80" alt="Hero" style={{ width:"100%", height:"100%", objectFit:"cover", opacity:0.15 }} />
                 </div>
-                <motion.div animate={{ y:[0,-8,0] }} transition={{ duration:4, repeat:Infinity, ease:"easeInOut" }}
-                  style={{ position:"absolute", bottom:"-1.5rem", left:"-3rem", background:C.cream, padding:"1rem 1.4rem", boxShadow:"0 12px 32px rgba(92,45,62,0.1)" }}>
-                  <div style={{ fontSize:"0.6rem", letterSpacing:"0.25em", textTransform:"uppercase", color:C.gold }}>Bestseller</div>
-                  <div style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"1.1rem", color:C.rouge, margin:"0.2rem 0" }}>Sakura Blush</div>
-                  <div style={{ fontSize:"0.8rem", color:C.plum, opacity:0.6 }}>¥5,200</div>
-                </motion.div>
-              </motion.div>
-              <div style={{ position:"relative", zIndex:1, padding:"0 3rem", maxWidth:580 }}>
+              )}
+              <div style={{ position:"relative", zIndex:1, padding: isMobile ? "0 1.5rem" : "0 3rem", maxWidth: isMobile ? "100%" : 580, textAlign: isMobile ? "center" : "left" }}>
                 <motion.p initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.8, delay:0.3 }}
                   style={{ fontSize:"0.7rem", letterSpacing:"0.5em", textTransform:"uppercase", color:C.rouge, marginBottom:"1.5rem" }}>— Spring Collection 2026</motion.p>
                 <div style={{ overflow:"hidden", marginBottom:"0.4rem" }}>
                   <motion.h1 initial={{ y:"100%" }} animate={{ y:0 }} transition={{ duration:1, delay:0.4, ease:[0.22,1,0.36,1] }}
-                    style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"5rem", color:C.plum, lineHeight:1.05, margin:0 }}>美しさの</motion.h1>
+                    style={{ fontFamily:"'Shippori Mincho', serif", fontSize: isMobile ? "3.5rem" : "5rem", color:C.plum, lineHeight:1.05, margin:0 }}>美しさの</motion.h1>
                 </div>
                 <div style={{ overflow:"hidden", marginBottom:"1.5rem" }}>
                   <motion.h1 initial={{ y:"100%" }} animate={{ y:0 }} transition={{ duration:1, delay:0.55, ease:[0.22,1,0.36,1] }}
-                    style={{ fontFamily:"'Cormorant Garamond', serif", fontStyle:"italic", fontSize:"4rem", color:C.rouge, lineHeight:1.05, margin:0 }}>Art of Beauty</motion.h1>
+                    style={{ fontFamily:"'Cormorant Garamond', serif", fontStyle:"italic", fontSize: isMobile ? "2.8rem" : "4rem", color:C.rouge, lineHeight:1.05, margin:0 }}>Art of Beauty</motion.h1>
                 </div>
                 <motion.p initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.9, delay:0.7 }}
-                  style={{ fontSize:"1.05rem", lineHeight:1.9, color:C.ink, opacity:0.6, maxWidth:400, fontWeight:300, marginBottom:"2.5rem" }}>
+                  style={{ fontSize:"1rem", lineHeight:1.9, color:C.ink, opacity:0.6, maxWidth: isMobile ? "100%" : 400, fontWeight:300, marginBottom:"2.5rem" }}>
                   Rooted in ancient Kyoto rituals, every formula blends botanical wisdom with modern elegance.
                 </motion.p>
                 <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.8, delay:0.85 }}
-                  style={{ display:"flex", gap:"1rem" }}>
+                  style={{ display:"flex", gap:"1rem", justifyContent: isMobile ? "center" : "flex-start", flexWrap:"wrap" }}>
                   <motion.button whileHover={{ background:C.rouge, y:-2 }} whileTap={{ scale:0.97 }}
                     onClick={() => document.getElementById("products")?.scrollIntoView({ behavior:"smooth" })}
                     style={{ background:C.plum, color:C.cream, padding:"0.9rem 2.4rem", border:"none", fontFamily:"'Cormorant Garamond', serif", fontSize:"0.85rem", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer", transition:"background 0.3s" }}>
@@ -669,10 +749,10 @@ export default function ShobiAnimated() {
             <Marquee />
 
             {/* ── PHILOSOPHY INTRO ── */}
-            <section style={{ padding:"6rem 3rem 3rem", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"4rem", alignItems:"center" }}>
+            <section style={{ padding: isMobile ? "3rem 1.5rem" : "6rem 3rem 3rem", display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap:"4rem", alignItems:"center" }}>
               <FadeUp>
                 <span style={{ fontSize:"0.65rem", letterSpacing:"0.4em", textTransform:"uppercase", color:C.gold, display:"block", marginBottom:"1rem" }}>— The philosophy</span>
-                <h2 style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"3rem", color:C.plum, lineHeight:1.15, marginBottom:"1.5rem" }}>美は<br />儀式である</h2>
+                <h2 style={{ fontFamily:"'Shippori Mincho', serif", fontSize: isMobile ? "2rem" : "3rem", color:C.plum, lineHeight:1.15, marginBottom:"1.5rem" }}>美は<br />儀式である</h2>
                 <p style={{ fontSize:"1.1rem", lineHeight:1.9, color:C.ink, opacity:0.6, fontWeight:300, marginBottom:"1.5rem", maxWidth:420 }}>
                   We make products for people who understand the difference between a routine and a ritual. Beauty as daily meditation.
                 </p>
@@ -680,30 +760,32 @@ export default function ShobiAnimated() {
                   Read our story →
                 </motion.a>
               </FadeUp>
-              <FadeIn delay={0.2}>
-                <div style={{ position:"relative", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem", alignItems:"start" }}>
-                  <div style={{ aspectRatio:"3/4", overflow:"hidden" }}>
-                    <img src="https://images.unsplash.com/photo-1596704017254-9b121068fb31?w=600&q=80" alt="Makeup palette" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+              {!isMobile && (
+                <FadeIn delay={0.2}>
+                  <div style={{ position:"relative", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"1rem", alignItems:"start" }}>
+                    <div style={{ aspectRatio:"3/4", overflow:"hidden" }}>
+                      <img src="https://images.unsplash.com/photo-1596704017254-9b121068fb31?w=600&q=80" alt="Makeup palette" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+                    </div>
+                    <div style={{ aspectRatio:"3/4", overflow:"hidden", marginTop:"2rem" }}>
+                      <img src="https://images.unsplash.com/photo-1593260853607-d0e0f639bdab?w=600&q=80" alt="Woman with flower" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+                    </div>
+                    <div style={{ position:"absolute", top:"1.5rem", left:"-1.5rem", right:"1.5rem", bottom:"-1.5rem", border:`0.5px solid ${C.mist}`, zIndex:-1 }} />
+                    <motion.div animate={{ y:[0,-10,0] }} transition={{ duration:5, repeat:Infinity, ease:"easeInOut" }}
+                      style={{ position:"absolute", top:"-1.5rem", right:"-1rem", fontFamily:"'Shippori Mincho', serif", fontSize:"5rem", color:C.plum, opacity:0.08, lineHeight:1 }}>美</motion.div>
                   </div>
-                  <div style={{ aspectRatio:"3/4", overflow:"hidden", marginTop:"2rem" }}>
-                    <img src="https://images.unsplash.com/photo-1593260853607-d0e0f639bdab?w=600&q=80" alt="Woman with flower" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
-                  </div>
-                  <div style={{ position:"absolute", top:"1.5rem", left:"-1.5rem", right:"1.5rem", bottom:"-1.5rem", border:`0.5px solid ${C.mist}`, zIndex:-1 }} />
-                  <motion.div animate={{ y:[0,-10,0] }} transition={{ duration:5, repeat:Infinity, ease:"easeInOut" }}
-                    style={{ position:"absolute", top:"-1.5rem", right:"-1rem", fontFamily:"'Shippori Mincho', serif", fontSize:"5rem", color:C.plum, opacity:0.08, lineHeight:1 }}>美</motion.div>
-                </div>
-              </FadeIn>
+                </FadeIn>
+              )}
             </section>
 
             {/* ── PRODUCTS ── */}
-            <section id="products" style={{ padding:"5rem 3rem" }}>
+            <section id="products" style={{ padding: isMobile ? "3rem 1.5rem" : "5rem 3rem" }}>
               <FadeUp>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:"2.5rem", borderBottom:`0.5px solid ${C.mist}`, paddingBottom:"1.5rem" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems: isMobile ? "flex-start" : "flex-end", flexDirection: isMobile ? "column" : "row", gap: isMobile ? "1rem" : 0, marginBottom:"2.5rem", borderBottom:`0.5px solid ${C.mist}`, paddingBottom:"1.5rem" }}>
                   <div>
                     <span style={{ display:"block", fontSize:"0.65rem", letterSpacing:"0.35em", textTransform:"uppercase", color:C.gold, marginBottom:"0.4rem", fontFamily:"'Cormorant Garamond', serif" }}>Curated for you</span>
                     <h2 style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"2rem", color:C.plum, margin:0 }}>旬の品</h2>
                   </div>
-                  <div style={{ display:"flex", gap:"0.5rem" }}>
+                  <div style={{ display:"flex", gap:"0.5rem", flexWrap:"wrap" }}>
                     {["all","skin","lips","eyes","cheeks"].map(cat => (
                       <motion.button key={cat} whileTap={{ scale:0.95 }} onClick={() => setActiveCategory(cat)}
                         animate={{ background:activeCategory===cat ? C.plum : "transparent", color:activeCategory===cat ? C.cream : C.plum }}
@@ -715,18 +797,18 @@ export default function ShobiAnimated() {
                   </div>
                 </div>
               </FadeUp>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"2rem" }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: isMobile ? "1rem" : "2rem" }}>
                 {filtered.map((p,i) => <ProductCard key={p.id} product={p} index={i} onOpen={setSelectedProduct} />)}
               </div>
             </section>
 
             {/* ── RITUAL STRIP ── */}
             <FadeUp>
-              <div style={{ margin:"2rem 3rem 5rem", background:C.plum, display:"grid", gridTemplateColumns:"1fr 1fr", overflow:"hidden", minHeight:320 }}>
-                <div style={{ padding:"4rem" }}>
+              <div style={{ margin: isMobile ? "2rem 1.5rem 4rem" : "2rem 3rem 5rem", background:C.plum, display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", overflow:"hidden", minHeight: isMobile ? "auto" : 320 }}>
+                <div style={{ padding: isMobile ? "2.5rem 1.5rem" : "4rem" }}>
                   <span style={{ fontSize:"0.65rem", letterSpacing:"0.35em", textTransform:"uppercase", color:"#e8a0ae", display:"block", marginBottom:"1rem" }}>— Morning practice</span>
-                  <h2 style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"2.2rem", color:C.cream, lineHeight:1.2, marginBottom:"1rem" }}>
-                    The Six-Step<br /><em style={{ fontFamily:"'Cormorant Garamond', serif", fontStyle:"italic", color:"#e8a0ae", fontSize:"1.8rem" }}>Shōbi Ritual</em>
+                  <h2 style={{ fontFamily:"'Shippori Mincho', serif", fontSize: isMobile ? "1.8rem" : "2.2rem", color:C.cream, lineHeight:1.2, marginBottom:"1rem" }}>
+                    The Six-Step<br /><em style={{ fontFamily:"'Cormorant Garamond', serif", fontStyle:"italic", color:"#e8a0ae", fontSize: isMobile ? "1.5rem" : "1.8rem" }}>Shōbi Ritual</em>
                   </h2>
                   <p style={{ color:C.mist, fontSize:"0.95rem", lineHeight:1.8, fontWeight:300, marginBottom:"1.8rem", opacity:0.8 }}>
                     A meditative practice from Kyoto's maiko tradition, reimagined for contemporary life.
@@ -737,21 +819,23 @@ export default function ShobiAnimated() {
                     Discover the Ritual
                   </motion.button>
                 </div>
-                <div style={{ position:"relative", overflow:"hidden" }}>
-                  <img src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=80" alt="Ritual" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", opacity:0.45 }} />
-                </div>
+                {!isMobile && (
+                  <div style={{ position:"relative", overflow:"hidden" }}>
+                    <img src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=80" alt="Ritual" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", opacity:0.45 }} />
+                  </div>
+                )}
               </div>
             </FadeUp>
 
             {/* ── INGREDIENT TEASER ── */}
-            <section style={{ padding:"4rem 3rem 6rem" }}>
+            <section style={{ padding: isMobile ? "3rem 1.5rem 4rem" : "4rem 3rem 6rem" }}>
               <FadeUp>
                 <div style={{ textAlign:"center", marginBottom:"3rem" }}>
                   <span style={{ fontSize:"0.65rem", letterSpacing:"0.35em", textTransform:"uppercase", color:C.gold, display:"block", marginBottom:"0.8rem" }}>— What we put in</span>
                   <h2 style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"2.2rem", color:C.plum }}>六つの素材</h2>
                 </div>
               </FadeUp>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"1.5rem" }}>
+              <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap:"1.5rem" }}>
                 {[
                   { kanji:"椿", name:"Camellia Oil", origin:"Kyushu, Japan", color:"#c94a5e", img:"https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=500&q=80" },
                   { kanji:"桜", name:"Cherry Blossom", origin:"Yoshino, Nara", color:"#e8a4b4", img:"https://images.unsplash.com/photo-1522383225653-ed111181a951?w=500&q=80" },
@@ -772,14 +856,7 @@ export default function ShobiAnimated() {
               </div>
             </section>
 
-            <footer style={{ background:C.pale, padding:"2rem 3rem", display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:`0.5px solid ${C.mist}` }}>
-              <div style={{ fontFamily:"'Shippori Mincho', serif", fontSize:"0.9rem", color:C.plum, opacity:0.5, letterSpacing:"0.15em" }}>粧美 Shōbi Beauty — Kyoto © 2026</div>
-              <div style={{ display:"flex", gap:"2rem" }}>
-                {["Privacy","Sustainability","Press","Stockists"].map(l => (
-                  <motion.a key={l} onClick={() => setPage(l.toLowerCase())} whileHover={{ opacity:0.8, y:-1 }} style={{ fontSize:"0.68rem", letterSpacing:"0.15em", textTransform:"uppercase", color:C.plum, opacity:0.4, textDecoration:"none", cursor:"pointer" }}>{l}</motion.a>
-                ))}
-              </div>
-            </footer>
+            {footer}
           </motion.div>
         )}
       </AnimatePresence>
