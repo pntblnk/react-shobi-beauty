@@ -804,26 +804,21 @@ export default function ShobiAnimated() {
 
             {/* ── RITUAL STRIP ── */}
             <FadeUp>
-              <div style={{ margin: isMobile ? "2rem 1.5rem 4rem" : "2rem 3rem 5rem", background:C.plum, display:"grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", overflow:"hidden", minHeight: isMobile ? "auto" : 320 }}>
-                <div style={{ padding: isMobile ? "2.5rem 1.5rem" : "4rem" }}>
-                  <span style={{ fontSize:"0.65rem", letterSpacing:"0.35em", textTransform:"uppercase", color:"#e8a0ae", display:"block", marginBottom:"1rem" }}>— Morning practice</span>
-                  <h2 style={{ fontFamily:"'Shippori Mincho', serif", fontSize: isMobile ? "1.8rem" : "2.2rem", color:C.cream, lineHeight:1.2, marginBottom:"1rem" }}>
-                    The Six-Step<br /><em style={{ fontFamily:"'Cormorant Garamond', serif", fontStyle:"italic", color:"#e8a0ae", fontSize: isMobile ? "1.5rem" : "1.8rem" }}>Shōbi Ritual</em>
+              <div style={{ margin: isMobile ? "2rem 1.5rem 4rem" : "2rem 3rem 5rem", background:C.plum, position:"relative", overflow:"hidden", minHeight: isMobile ? 280 : 320 }}>
+                {/* Background image always visible, more prominent on mobile */}
+                <img src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=80" alt="Ritual" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", opacity: isMobile ? 0.25 : 0.45, display:"block" }} />
+                <div style={{ position:"relative", zIndex:1, padding: isMobile ? "2.5rem 1.5rem" : "4rem", maxWidth: isMobile ? "100%" : "50%" }}>
+                  <span style={{ fontSize:"0.65rem", letterSpacing:"0.35em", textTransform:"uppercase", color:"#e8a0ae", display:"block", marginBottom:"0.8rem" }}>— Morning practice</span>
+                  <h2 style={{ fontFamily:"'Shippori Mincho', serif", fontSize: isMobile ? "1.6rem" : "2.2rem", color:C.cream, lineHeight:1.2, marginBottom:"0.8rem" }}>
+                    The Six-Step<br /><em style={{ fontFamily:"'Cormorant Garamond', serif", fontStyle:"italic", color:"#e8a0ae", fontSize: isMobile ? "1.3rem" : "1.8rem" }}>Shōbi Ritual</em>
                   </h2>
-                  <p style={{ color:C.mist, fontSize:"0.95rem", lineHeight:1.8, fontWeight:300, marginBottom:"1.8rem", opacity:0.8 }}>
-                    A meditative practice from Kyoto's maiko tradition, reimagined for contemporary life.
-                  </p>
+                  {!isMobile && <p style={{ color:C.mist, fontSize:"0.95rem", lineHeight:1.8, fontWeight:300, marginBottom:"1.8rem", opacity:0.8 }}>A meditative practice from Kyoto's maiko tradition, reimagined for contemporary life.</p>}
                   <motion.button whileHover={{ background:"#a83a4e", y:-2 }} whileTap={{ scale:0.97 }}
                     onClick={() => setPage("rituals")}
-                    style={{ background:C.rouge, color:C.cream, padding:"0.85rem 2rem", border:"none", fontFamily:"'Cormorant Garamond', serif", fontSize:"0.85rem", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer", transition:"background 0.3s" }}>
+                    style={{ background:C.rouge, color:C.cream, padding: isMobile ? "0.7rem 1.5rem" : "0.85rem 2rem", border:"none", fontFamily:"'Cormorant Garamond', serif", fontSize:"0.85rem", letterSpacing:"0.2em", textTransform:"uppercase", cursor:"pointer", transition:"background 0.3s", marginTop: isMobile ? "1rem" : 0 }}>
                     Discover the Ritual
                   </motion.button>
                 </div>
-                {!isMobile && (
-                  <div style={{ position:"relative", overflow:"hidden" }}>
-                    <img src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&q=80" alt="Ritual" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block", opacity:0.45 }} />
-                  </div>
-                )}
               </div>
             </FadeUp>
 
